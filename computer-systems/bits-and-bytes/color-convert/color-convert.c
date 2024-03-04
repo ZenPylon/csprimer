@@ -52,7 +52,7 @@ char *extract_hex_chars(const char *line)
         hex_chars = malloc(MAX_HEX_CHARS);
         char *hex_char = hex_chars;
 
-        while (*curr_c != '\0' && *curr_c != ';') {
+        while (*curr_c != '\0' && *curr_c != ';' && hex_char - hex_chars < MAX_HEX_CHARS) {
             if (*curr_c == '#' || *curr_c == ' ') {
                 curr_c++;
                 continue;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     FILE *input_file = fopen(argv[1], "r");
     if (input_file == NULL)
     {
-        fprintf(stderr, "Unable to open CSS File. Please double-check the path and filename.\n");
+        fprintf(stderr, "Unable to open CSS File %s. Please double-check the path and filename.\n", argv[1]);
         exit(1);
     }
 
@@ -111,6 +111,7 @@ int main(int argc, char **argv)
             fprintf(output_file, file_line);    
             continue;
         } else {
+            fprintf(output_file, hex_chars);
             free(hex_chars);
         }
     }
