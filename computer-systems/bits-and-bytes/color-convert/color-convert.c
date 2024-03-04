@@ -3,9 +3,72 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdbool.h>
+
+// Arbitrarily limit line length
+const size_t MAX_LENGTH = 256;
+
+// Max number of chars in hex string
+const size_t MAX_HEX_CHARS = 8;
+
+// Extracts a hexadecimal string following a `color:` property
+// Returns NULL if the line does not contain "color:"
+// Does not validate the hex value following "color:"
+// Example: `background-color: #fff` returns "fff"
+// Caller is responsible for freeing the returned value
+char *extract_hex_chars(const char *line)
+{
+    char *match = "color:";
+    size_t match_len = strlen(match);
+    
+    char *match_c = match;
+    char *curr_c = line;
+
+    size_t hex_start;
+    size_t hex_end;
+    char *hex_chars = NULL;
+    bool has_color = false;
+
+    while (*curr_c != '\0')
+    {
+        if (*curr_c == *match_c)
+        {
+            match_c++;
+        }
+        else
+        {
+            // Reset the matching character to test against if this character is not the next in the sequence of "color"
+            match_c = match;
+        }
+            
+        curr_c++;
+        // We've got "color:"
+        if (match_c - match == match_len) {
+            has_color = true;
+            break;
+        }
+    }
+    if (has_color) {
+        hex_chars = malloc(MAX_HEX_CHARS);
+        char *hex_char = hex_chars;
+
+        while (*curr_c != '\0' && *curr_c != ';') {
+            if (*curr_c == '#' || *curr_c == ' ') {
+                curr_c++;
+                continue;
+            }
+            *hex_char = *curr_c;
+            hex_char++;
+            curr_c++;
+        }
+    }
+    
+    return hex_chars;
+}
 
 int main(int argc, char **argv)
 {
+
     // Validate program input
     if (argc != 2)
     {
@@ -40,7 +103,18 @@ int main(int argc, char **argv)
         perror("ERROR:");
         exit(1);
     }
-    fprintf(output_file, "Hello, file");
+    char *file_line[MAX_LENGTH];
+    while (fgets(file_line, MAX_LENGTH, input_file) != NULL)
+    {
+        char *hex_chars = extract_hex_chars(file_line);
+        if (hex_chars == NULL) {
+            fprintf(output_file, file_line);    
+            continue;
+        } else {
+            free(hex_chars);
+        }
+    }
+    
 
     // Replace any hexadecimal color values with rgb
     free(output_filename);
