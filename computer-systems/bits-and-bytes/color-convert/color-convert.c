@@ -14,7 +14,6 @@ const size_t MAX_HEX_CHARS = 8;
 // Arbitrary rgba char limit
 const size_t MAX_RGBA_CHARS = 30;
 
-
 // Converts a hex char like 'c' to the value 10
 // This case-insensitive, so F and f are valid
 // Returns -1 if hex is invalid
@@ -39,26 +38,46 @@ int8_t hex_char_to_dec(char hex)
     }
 }
 
-
 // Returns a hex color string in rgb or rgba() format
 // Caller is responsible for freeing the returned memory
 char *hex_chars_to_rgba(char *hex_chars)
 {
     size_t num_chars = strlen(hex_chars);
-    char *rgba_chars = (char*)malloc(MAX_RGBA_CHARS);
+    char *rgba_chars = (char *)malloc(MAX_RGBA_CHARS);
 
-    // if (num_chars == 3)
-    // {
-    //     int8_t r = hex_chars[0];
-    //     int8_t g = hex_chars[0];
-    //     int8_t b = hex_chars[0];
-    //     sprintf(rgba_chars, "rgb(%d)", r, g, b);
-    // }
-    if (num_chars == 6) {
+    if (num_chars == 3)
+    {
+        uint8_t r = (uint8_t)(hex_char_to_dec(hex_chars[0])) << 4 | hex_char_to_dec(hex_chars[0]);
+        uint8_t g = (uint8_t)(hex_char_to_dec(hex_chars[1])) << 4 | hex_char_to_dec(hex_chars[1]);
+        uint8_t b = (uint8_t)(hex_char_to_dec(hex_chars[2])) << 4 | hex_char_to_dec(hex_chars[2]);
+        sprintf(rgba_chars, "rgb(%d, %d, %d)", r, g, b);
+    }
+    else if (num_chars == 4)
+    {
+        uint8_t r = (uint8_t)(hex_char_to_dec(hex_chars[0])) << 4 | hex_char_to_dec(hex_chars[0]);
+        uint8_t g = (uint8_t)(hex_char_to_dec(hex_chars[1])) << 4 | hex_char_to_dec(hex_chars[1]);
+        uint8_t b = (uint8_t)(hex_char_to_dec(hex_chars[2])) << 4 | hex_char_to_dec(hex_chars[2]);
+        float a = (float)((uint8_t)(hex_char_to_dec(hex_chars[3])) << 4 | hex_char_to_dec(hex_chars[3])) / 255;
+        sprintf(rgba_chars, "rgba(%d, %d, %d, %f)", r, g, b, a);
+    }
+    else if (num_chars == 6)
+    {
         uint8_t r = (uint8_t)(hex_char_to_dec(hex_chars[0])) << 4 | hex_char_to_dec(hex_chars[1]);
         uint8_t g = (uint8_t)(hex_char_to_dec(hex_chars[2])) << 4 | hex_char_to_dec(hex_chars[3]);
         uint8_t b = (uint8_t)(hex_char_to_dec(hex_chars[4])) << 4 | hex_char_to_dec(hex_chars[5]);
         sprintf(rgba_chars, "rgb(%d, %d, %d)", r, g, b);
+    }
+    else if (num_chars == 8)
+    {
+        uint8_t r = (uint8_t)(hex_char_to_dec(hex_chars[0])) << 4 | hex_char_to_dec(hex_chars[1]);
+        uint8_t g = (uint8_t)(hex_char_to_dec(hex_chars[2])) << 4 | hex_char_to_dec(hex_chars[3]);
+        uint8_t b = (uint8_t)(hex_char_to_dec(hex_chars[4])) << 4 | hex_char_to_dec(hex_chars[5]);
+        float a = (float)((uint8_t)(hex_char_to_dec(hex_chars[6])) << 4 | hex_char_to_dec(hex_chars[7])) / 255;
+        sprintf(rgba_chars, "rgba(%d, %d, %d, %f)", r, g, b, a);
+    }
+    else
+    {
+        sprintf(rgba_chars, hex_chars);
     }
     return rgba_chars;
 }
@@ -99,7 +118,8 @@ char *hex_color_to_rgba(char *line)
             break;
         }
     }
-    if (!has_color) { 
+    if (!has_color)
+    {
         return line;
     }
 
@@ -122,7 +142,7 @@ char *hex_color_to_rgba(char *line)
     }
     char *rgba_part = hex_chars_to_rgba(hex_chars);
     size_t rgba_len = strlen(rgba_part);
-    
+
     // + 2 for semi-colon and \n
     char *css_decl = malloc(prop_length + rgba_len + 1);
     memcpy(css_decl, line, prop_length);
@@ -134,10 +154,10 @@ char *hex_color_to_rgba(char *line)
     return css_decl;
 }
 
-
 int main(int argc, char **argv)
 {
     // Validate program input
+    char cwd[100];
     if (argc != 2)
     {
         fprintf(stderr, "Usage: color-convert css_file.css");
