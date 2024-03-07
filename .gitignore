@@ -56,3 +56,5 @@ dkms.conf
 
 # CSPrimer files
 csprimer-files
+
+.DS_Store
