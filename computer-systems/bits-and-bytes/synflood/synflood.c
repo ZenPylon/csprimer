@@ -77,40 +77,55 @@ int main(int argc, char **argv)
         fprintf(stderr, "Invalid pcap file.");
         exit(EXIT_FAILURE);
     }
+    
+    // Parse all packets in the savefile
+    uint32_t num_packets = 0;
+    while (true) 
+    {
+        // Read the next packet, starting with the per-packet header
+        per_packet_header_t per_packet_header;
+        read_count = fread(&per_packet_header, sizeof(per_packet_header_t), 1, pcap_file);
+        if (read_count != 1 && feof(pcap_file))
+        {
+            break;
+        }
+        if (read_count != 1 && ferror(pcap_file)) 
+        {
+            perror("Error while reading pcap packet header");
+            exit(EXIT_FAILURE);
+        }
 
-    // Read the next packet, starting with the per-packet header
-    per_packet_header_t per_packet_header;
-    read_count = fread(&per_packet_header, sizeof(per_packet_header_t), 1, pcap_file);
-    if (read_count != 1) 
-    {
-        perror("Error while reading pcap packet header");
-        exit(EXIT_FAILURE);
-    }
+        // Note: we are ignoring truncated packets with the assumption that the snapshot_len is large enough to house the TCP header data
+        uint8_t *buffer = malloc(per_packet_header.packet_len);
+        if (buffer == NULL)
+        {
+            perror("Could not allocate memory for packet data");
+            exit(EXIT_FAILURE);
+        }
 
-    // Note: we are ignoring truncated packets with the assumption that the snapshot_len is large enough to house the TCP header data
-    uint8_t *buffer = malloc(per_packet_header.packet_len);
-    if (buffer == NULL)
-    {
-        perror("Could not allocate memory for packet data");
-        exit(EXIT_FAILURE);
-    }
+        read_count = fread(buffer, per_packet_header.packet_len, 1, pcap_file);
+        if (read_count != 1)
+        {
+            perror("Error while reading pcap packet");
+            exit(EXIT_FAILURE);
+        }
+        uint32_t proto = *(uint32_t*)buffer;
+        if (swap_bytes) 
+        {
+            proto = bswap_32(proto);
+        }
+        if (proto != 2)
+        {
+            fprintf(stderr, "Unsupported protocol. Only IPv4 packet is supported.");
+            exit(EXIT_FAILURE);
+        }
 
-    read_count = fread(buffer, sizeof(buffer), 1, pcap_file);
-    if (read_count != 1 && ferror(pcap_file))
-    {
-        perror("Error while reading pcap packet");
-        exit(EXIT_FAILURE);
+        // uint8_t *ip_header = buffer + 4; // protocol field is 4 bytes
+        num_packets++;
     }
-    uint32_t proto = *(uint32_t*)buffer;
-    if (swap_bytes) 
-    {
-        proto = bswap_32(proto);
-    }
-    if (proto != 2)
-    {
-        perror("Unsupported protocol. Only IPv4 packet is supported.");
-        exit(EXIT_FAILURE);
-    }
+    
+
+    printf("Parsed a total of %d packets", num_packets);
 
     fclose(pcap_file);
     return 0;
