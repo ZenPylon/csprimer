@@ -11,6 +11,13 @@ static inline uint32_t bswap_32(uint32_t a)
 {
     return (a & 0xFF000000) >> 24 | (a & 0x00FF0000) >> 8 | (a & 0x0000FF00) << 8 | (a & 0x000000FF) << 24;
 }
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define ntohs(x) bswap_16(x)
+#define ntohl(x) bswap_32(x)
+#else
+#define ntohs(x) (x)
+#define ntohl(x) (x)
+#endif
 
 typedef struct Pcap_Header
 {
@@ -80,6 +87,10 @@ int main(int argc, char **argv)
     
     // Parse all packets in the savefile
     uint32_t num_packets = 0;
+    uint32_t num_port_80 = 0;
+    uint32_t num_syns = 0;
+    uint32_t num_acks = 0;
+
     while (true) 
     {
         // Read the next packet, starting with the per-packet header
@@ -119,13 +130,39 @@ int main(int argc, char **argv)
             fprintf(stderr, "Unsupported protocol. Only IPv4 packet is supported.");
             exit(EXIT_FAILURE);
         }
+        // loopback interface protocol field is 4 bytes
+        uint8_t *ip_header = buffer + 4; 
+        uint8_t ihl = 0x0f & *ip_header;
+        if (*(ip_header + 9) != 6)
+        {
+            fprintf(stderr, "Unsupported protocol. Only accepts TCP (protocol 6)");
+            exit(EXIT_FAILURE);
+        }
+        // Skip ahead for each ip header DWORD
+        uint16_t *source_port = (uint16_t *) (ip_header + ihl * 4);
+        
+        // ip_header fields appear to be in big-endian (?)
+        uint16_t *dest_port = source_port + 1;
 
-        // uint8_t *ip_header = buffer + 4; // protocol field is 4 bytes
+        // printf("%d --> %d\n", bswap_16(*source_port), bswap_16(*dest_port));
+        uint8_t flags = *(((uint8_t *)source_port) + 13);
+
+        // Ack bit
+        if (bswap_16(*source_port) == 80 && flags & 0x10)
+        {   
+            num_acks++;
+        }
+        // Syn bit
+        if (bswap_16(*dest_port) == 80 && flags & 0x02)
+        {
+            num_syns++;
+        }
         num_packets++;
     }
     
 
     printf("Parsed a total of %d packets", num_packets);
+    printf("There were %d syn packets on port 80, but only %d ack packets", num_syns, num_acks);
 
     fclose(pcap_file);
     return 0;
