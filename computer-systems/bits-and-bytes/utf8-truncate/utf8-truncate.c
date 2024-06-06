@@ -66,13 +66,15 @@ int main(int argc, char **argv)
         
         printf("Trunc length is %d\n", trunc_len);
         // NOTE - we're assuming that the input is well formed i.e. that each line has at least the specified trunc_len
-        if (linechar_counter > trunc_len || *cases_ptr == '\n')
+        if (linechar_counter >= trunc_len || *cases_ptr == '\n')
         {
             while (*cases_ptr != '\n') 
             {
                 cases_ptr++;
             }
             *output_ptr = '\n';
+            cases_ptr++;
+            output_ptr++;
             linechar_counter = 0;
             continue;
         }
@@ -83,7 +85,7 @@ int main(int argc, char **argv)
         linechar_counter++;
     }
     *output_ptr = '\0';
-    FILE *output_file = fopen("output", "wb");
+    FILE *output_file = fopen("csprimer-files/output", "wb");
     fwrite(output_buffer, output_ptr - output_buffer, 1, output_file);
 
     free(cases_buffer);
