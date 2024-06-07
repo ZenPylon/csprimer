@@ -3,15 +3,6 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
-static inline uint16_t bswap_16(uint16_t a)
-{
-    return (a & 0xFF00) >> 8 | (a & 0x00FF) << 8;
-}
-
-static inline uint32_t bswap_32(uint32_t a)
-{
-    return (a & 0xFF000000) >> 24 | (a & 0x00FF0000) >> 8 | (a & 0x0000FF00) << 8 | (a & 0x000000FF) << 24;
-}
 
 int main(int argc, char **argv)
 {
