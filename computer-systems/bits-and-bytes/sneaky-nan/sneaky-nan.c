@@ -22,7 +22,7 @@ double conceal(unsigned char *msg)
         {
             break;
         }
-        // Put the first character in the most significant of the
+        // Put the first character in the most significant byte of the double
         nan_mask |= ((uint64_t)curr_char) << (8 * count);
         ptr++;
     }
